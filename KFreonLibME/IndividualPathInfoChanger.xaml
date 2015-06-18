@@ -1,0 +1,27 @@
+﻿<Window x:Class="KFreonLibME.IndividualPathInfoChanger"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:useful="clr-namespace:UsefulThings.WPF;assembly=UsefulThings"
+             mc:Ignorable="d" Title="Path Information" SizeToContent="WidthAndHeight">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ResourceDict.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid>
+        <StackPanel Margin="0,0,0,35">
+            <ContentControl ContentTemplate="{StaticResource PathEditTemplate}" Content="{Binding}"/>
+        </StackPanel>
+
+
+        <Button x:Name="Savebutton" Content="Save" HorizontalAlignment="Left" Margin="10,0,0,10" Width="75" Height="20" VerticalAlignment="Bottom" Click="Savebutton_Click"/>
+        <Button Content="Cancel" Margin="0,0,10,10" HorizontalAlignment="Right" Width="75" Height="20" VerticalAlignment="Bottom" IsCancel="True"/>
+    </Grid>
+
+</Window>

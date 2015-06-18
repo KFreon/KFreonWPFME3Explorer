@@ -1,0 +1,472 @@
+﻿<Window x:Class="KFreonLibME.KFreonTPFToolsV3"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:test="clr-namespace:KFreonLibME.Textures"
+             mc:Ignorable="d" Width="1422.8" Height="657.125" Title="KFreon's TPF/DDS Tools" Closing="Window_Closing" AllowDrop="True" DragOver="Window_DragOver" Drop="Window_Drop">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ResourceDict.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid>
+        <Menu Margin="0,0,273,0" Background="White" VerticalAlignment="Top" IsEnabled="{Binding Busy, Converter={StaticResource InverseBoolConverter}}">
+            <MenuItem x:Name="LoadButton" Header="Load" Click="LoadButton_Click" IsEnabled="{Binding Busy, Converter={StaticResource InverseBoolConverter}}"/>
+            <MenuItem x:Name="Clear" Header="Clear All Files" Height="29" Click="Clear_Click" >
+                <MenuItem.Style>
+                    <Style TargetType="MenuItem">
+                        <Setter Property="IsEnabled" Value="False"/>
+
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Busy}" Value="false"/>
+                                    <Condition Binding="{Binding IsLoaded}" Value="true"/>
+                                </MultiDataTrigger.Conditions>
+                                <MultiDataTrigger.Setters>
+                                    <Setter Property="IsEnabled" Value="True"/>
+                                </MultiDataTrigger.Setters>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </MenuItem.Style>
+            </MenuItem>
+            <MenuItem x:Name="AutoFixALL" Header="AutoFix All" Click="AutoFixALL_Click">
+                <MenuItem.Style>
+                    <Style TargetType="MenuItem">
+                        <Setter Property="IsEnabled" Value="False"/>
+
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Busy}" Value="false"/>
+                                    <Condition Binding="{Binding IsAnalysed}" Value="true"/>
+                                    <Condition Binding="{Binding RequiresAutoFix}" Value="true"/>
+                                </MultiDataTrigger.Conditions>
+                                <MultiDataTrigger.Setters>
+                                    <Setter Property="IsEnabled" Value="True"/>
+                                </MultiDataTrigger.Setters>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </MenuItem.Style>
+            </MenuItem>
+        </Menu>
+
+        <StackPanel x:Name="GameTreeStatusStacker"  Orientation="Horizontal" Height="29" VerticalAlignment="Top" HorizontalAlignment="Right" Background="White" d:IsHidden="True">
+            <TextBox x:Name="SearchBox" Tag="Search Textures, PCCs, ExpIDs, and hashes..." Style="{StaticResource SearchBox}" Template="{StaticResource SearchBoxTemplate}" Text="{Binding Search.SearchBoxText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Visibility="{Binding IsChecked, ElementName=AdvancedSearchChecker, Converter={StaticResource BoolToVisConverter}, ConverterParameter={StaticResource True}}"/>
+            <StackPanel Orientation="Horizontal" Visibility="{Binding IsChecked, ElementName=AdvancedSearchChecker, Converter={StaticResource BoolToVisConverter}}">
+                <TextBox Text="{Binding Search.SearchBox1Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" x:Name="NameBox" Tag="Search Names..." Template="{StaticResource SearchBoxTemplate}" Style="{StaticResource SearchBox}"/>
+                <TextBox Text="{Binding Search.SearchBox2Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" x:Name="PCCBox" Tag="Search PCCs..." Template="{StaticResource SearchBoxTemplate}" Style="{StaticResource SearchBox}"/>
+                <TextBox Text="{Binding Search.SearchBox3Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" x:Name="ExpIDBox" Tag="Search ExpIDs..." Width="100" Template="{StaticResource SearchBoxTemplate}" Style="{StaticResource SearchBox}"/>
+                <TextBox Text="{Binding Search.SearchBox4Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" x:Name="HashBox" Tag="Search Hashes..." Width="100" Template="{StaticResource SearchBoxTemplate}" Style="{StaticResource SearchBox}"/>
+            </StackPanel>
+            <CheckBox x:Name="AdvancedSearchChecker" Content="Advanced Search" VerticalAlignment="Center" Margin="0,0,15,0"/>
+            <ContentControl Template="{StaticResource GameIndicators}"/>
+            <ContentControl Template="{StaticResource TreeIndicators}" IsEnabled="{Binding Busy, Converter={StaticResource InverseBoolConverter}}"/>
+        </StackPanel>
+
+        <Grid Margin="0,29,0,35">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="30*"/>
+                <RowDefinition Height="37*"/>
+                <RowDefinition Height="9*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="214*"/>
+                <ColumnDefinition Width="69*"/>
+            </Grid.ColumnDefinitions>
+
+            <!--Column 1-->
+            <StackPanel Orientation="Horizontal" Height="19" VerticalAlignment="Top">                
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsAnalysed}" Value="true"/>
+                                    <Condition Binding="{Binding RequiresAutoFix}" Value="true"/>
+                                </MultiDataTrigger.Conditions>
+                                
+                                <MultiDataTrigger.Setters>
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </MultiDataTrigger.Setters>
+                            </MultiDataTrigger> 
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                
+                <CheckBox Content="Invalids Only" Margin="5,0" IsChecked="{Binding MainListFilters, Converter={StaticResource MutuallyExclusiveCheckerConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <CheckBox Content="Valids Only" Margin="5,0" IsChecked="{Binding MainListFilters, Converter={StaticResource MutuallyExclusiveCheckerConverter},ConverterParameter={StaticResource True}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+            </StackPanel>
+            
+            <ListBox x:Name="MainListBox" Grid.RowSpan="2" ItemsSource="{Binding ItemsView}" BorderBrush="{x:Null}" ItemContainerStyle="{StaticResource ListBoxContainerStyle}" SelectionChanged="MainListBox_SelectionChanged" Margin="0,19,0,0" KeyDown="MainListBox_KeyDown">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel>
+                            <StackPanel.Resources>
+                                <SolidColorBrush x:Key="ErrorBrush" Color="Red" Opacity="0.2"/>
+                            </StackPanel.Resources>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Background" Value="Transparent"/>
+
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Analysed}" Value="true"/>
+                                                <Condition Binding="{Binding ValidTexture}" Value="false"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <MultiDataTrigger.Setters>
+                                                <Setter Property="Background" Value="{StaticResource ErrorBrush}"/>
+                                            </MultiDataTrigger.Setters>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <StackPanel Orientation="Horizontal" x:Name="Top" Background="Transparent">
+                                <Image x:Name="ThumbnailPreview" Width="64" Height="64">
+                                    <Image.Style>
+                                        <Style TargetType="{x:Type Image}">
+                                            <Setter Property="Source" Value="{Binding Thumbnail}"/>
+
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Thumbnail}" Value="{x:Null}">
+                                                    <Setter Property="Source" Value="{StaticResource DefaultTexture}"/>
+                                                </DataTrigger>
+
+                                                <DataTrigger Binding="{Binding isDef}" Value="true">
+                                                    <Setter Property="Source" Value="{StaticResource DefaultText}"/>
+                                                </DataTrigger>
+
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Image.Style>
+                                </Image>
+
+                                <StackPanel x:Name="ButtonsPanel" Margin="5,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding EntryName}" Margin="0,5"/>
+                                    <StackPanel Style="{StaticResource ButtonPanelStyle}" Orientation="Horizontal" Visibility="{Binding isDef, ConverterParameter={StaticResource True}, Converter={StaticResource BoolToVisConverter}}">
+                                        <StackPanel.Resources>
+                                            <Style BasedOn="{StaticResource InternalButtonStyle}" TargetType="Button">
+
+                                            </Style>
+                                        </StackPanel.Resources>
+                                        <Button Content="Install" Command="{Binding InstallCommand}">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource InternalButtonStyle}">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    
+                                                    <Style.Triggers>
+                                                        <MultiDataTrigger>
+                                                            <MultiDataTrigger.Conditions>
+                                                                <Condition Binding="{Binding Analysed}" Value="true"/>
+                                                                <Condition Binding="{Binding ValidTexture}" Value="true"/>
+                                                            </MultiDataTrigger.Conditions>
+                                                            
+                                                            <MultiDataTrigger.Setters>
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </MultiDataTrigger.Setters>
+                                                        </MultiDataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                        <Button Content="Replace Loaded" Command="{Binding ReplaceCommand}"/>
+                                        
+                                        <Button x:Name="ExtractConvertButton" Content="Extract/Convert">
+                                            <Button.Triggers>
+                                                <EventTrigger RoutedEvent="Button.Click">
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.Visibility)">
+                                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Collapsed}"/>
+                                                            </ObjectAnimationUsingKeyFrames>
+                                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ExtractChoicesPanel" Storyboard.TargetProperty="(UIElement.Visibility)">
+                                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Visible}"/>
+                                                            </ObjectAnimationUsingKeyFrames>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </EventTrigger>
+                                            </Button.Triggers>
+                                        </Button>
+
+                                        <StackPanel x:Name="ExtractChoicesPanel" Orientation="Horizontal" Visibility="Collapsed">
+                                            <Button Content="Extract!" Command="{Binding ExtractConvertCommand}" >
+                                                <Button.Triggers>
+                                                    <EventTrigger RoutedEvent="Button.Click">
+                                                        <BeginStoryboard>
+                                                            <Storyboard>
+                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ExtractConvertButton" Storyboard.TargetProperty="(UIElement.Visibility)">
+                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Visible}"/>
+                                                                </ObjectAnimationUsingKeyFrames>
+                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ExtractChoicesPanel" Storyboard.TargetProperty="(UIElement.Visibility)">
+                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Collapsed}"/>
+                                                                </ObjectAnimationUsingKeyFrames>
+                                                            </Storyboard>
+                                                        </BeginStoryboard>
+                                                    </EventTrigger>
+                                                </Button.Triggers>
+                                            </Button>
+                                            <ComboBox ItemsSource="{Binding ValidImageFormats}" SelectedItem="{Binding SaveFormat, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </StackPanel>
+                                        
+                                        <Button Content="Fix texture" Command="{Binding AutoFixCommand}">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource InternalButtonStyle}">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    
+                                                    <Style.Triggers>                                                        
+                                                        <MultiDataTrigger>
+                                                            <MultiDataTrigger.Conditions>
+                                                                <Condition Binding="{Binding Analysed}" Value="true"/>
+                                                                <Condition Binding="{Binding ValidTexture}" Value="false"/>
+                                                            </MultiDataTrigger.Conditions>
+                                                            
+                                                            <MultiDataTrigger.Setters>
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </MultiDataTrigger.Setters>
+                                                        </MultiDataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <Grid x:Name="DetailsPanel" Margin="20,0" Visibility="{Binding isDef, Converter={StaticResource BoolToVisConverter}, ConverterParameter={StaticResource True}}">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="13*"/>
+                                        <RowDefinition Height="10*"/>
+                                        <RowDefinition Height="9*"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="1*"/>
+                                        <ColumnDefinition Width="1*"/>
+                                        <ColumnDefinition Width="1*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Grid.Resources>
+                                        <Style TargetType="Label">
+                                            <Setter Property="Foreground" Value="Gray"/>
+                                        </Style>
+
+                                        <Style TargetType="TextBlock" x:Key="IndicatorBase">
+                                            <Setter Property="Margin" Value="3,5"/>
+                                            <Setter Property="Foreground" Value="Gray"/>
+                                            <Setter Property="FontWeight" Value="Bold"/>
+                                            <Setter Property="VerticalAlignment" Value="Center"
+/>
+                                        </Style>
+
+                                        <Style TargetType="TextBlock" x:Key="FormatIndicator" BasedOn="{StaticResource IndicatorBase}">
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding Analysed}" Value="true"/>
+                                                        <Condition Binding="{Binding FormatCorrect}" Value="true"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <MultiDataTrigger.Setters>
+                                                        <Setter Property="Foreground" Value="LightGreen"/>
+                                                    </MultiDataTrigger.Setters>
+                                                </MultiDataTrigger>
+
+
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding Analysed}" Value="true"/>
+                                                        <Condition Binding="{Binding FormatCorrect}" Value="false"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <MultiDataTrigger.Setters>
+                                                        <Setter Property="Foreground" Value="Red"/>
+                                                    </MultiDataTrigger.Setters>
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+
+                                        <Style TargetType="TextBlock" x:Key="MipsIndicator" BasedOn="{StaticResource IndicatorBase}">
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding Analysed}" Value="true"/>
+                                                        <Condition Binding="{Binding MipsCorrect}" Value="true"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <MultiDataTrigger.Setters>
+                                                        <Setter Property="Foreground" Value="LightGreen"/>
+                                                    </MultiDataTrigger.Setters>
+                                                </MultiDataTrigger>
+
+
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding Analysed}" Value="true"/>
+                                                        <Condition Binding="{Binding MipsCorrect}" Value="false"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <MultiDataTrigger.Setters>
+                                                        <Setter Property="Foreground" Value="Red"/>
+                                                    </MultiDataTrigger.Setters>
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="Gray"/>
+                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                        </Style>
+
+                                        <Style TargetType="StackPanel">
+                                            <Setter Property="Margin" Value="8,0,0,0"/>
+                                        </Style>
+                                    </Grid.Resources>
+
+                                    <Label Content="Details" FontWeight="Bold" Grid.ColumnSpan="2" HorizontalAlignment="Center"/>
+
+                                    <!--Column 1-->
+                                    <StackPanel x:Name="HashBox" Orientation="Horizontal" Grid.Row="1">
+                                        <Label Content="Hash:"/>
+                                        <TextBox Text="{Binding Hash, Converter={StaticResource HashToStringConverter}}" Padding="2,0" VerticalAlignment="Center"/>
+                                        <Button Content="Reset Hash" Style="{StaticResource GeneralButtonStyle}" VerticalAlignment="Center" Visibility="{Binding IsHashChanged, Converter={StaticResource BoolToVisConverter}}" Command="{Binding ResetHashCommand}"/>
+                                    </StackPanel>
+
+                                    <StackPanel x:Name="WidthAndHeightBox" Orientation="Horizontal" Grid.Row="2">
+                                        <Label Content="Width:"/>
+                                        <TextBlock Text="{Binding Width}" Style="{StaticResource IndicatorBase}"/>
+                                        <Label Content="Height:" Margin="10,0,0,0"/>
+                                        <TextBlock Text="{Binding Height}" Style="{StaticResource IndicatorBase}"/>
+                                    </StackPanel>
+
+                                    <!--Column 2-->
+                                    <StackPanel x:Name="ImageFormatBox" Orientation="Horizontal" Grid.Row="1" Grid.Column="1">
+                                        <TextBlock Text="Image Format: "/>
+                                        <TextBlock FontWeight="Bold" Text="{Binding Format, Converter={StaticResource EnumToStringConverter}, ConverterParameter={x:Type test:TextureFormat}}" Style="{StaticResource FormatIndicator}"/>
+                                    </StackPanel>
+
+                                    <StackPanel x:Name="ExpectedFormatBox" Orientation="Horizontal" Grid.Row="2" Grid.Column="1" Visibility="{Binding Analysed, Converter={StaticResource BoolToVisConverter}}">
+                                        <TextBlock Text="Expected Format:" />
+                                        <TextBlock FontWeight="Bold" Text="{Binding ExpectedFormat, Converter={StaticResource EnumToStringConverter}, ConverterParameter={x:Type test:TextureFormat}}" Style="{StaticResource FormatIndicator}"/>
+                                    </StackPanel>
+
+                                    <StackPanel x:Name="ImageMipsBox" Orientation="Horizontal" Grid.Row="1" Grid.Column="2">
+                                        <TextBlock Text="Image Mips: "/>
+                                        <TextBlock Text="{Binding NumMips}" Style="{StaticResource MipsIndicator}"/>
+                                    </StackPanel>
+
+                                    <StackPanel x:Name="ExpectedMipsBox" Orientation="Horizontal" Grid.Row="2" Grid.Column="2" Visibility="{Binding Analysed, Converter={StaticResource BoolToVisConverter}}">
+                                        <TextBlock Text="Expected Mips:"/>
+                                        <TextBlock Text="{Binding ExpectedMips}" Style="{StaticResource MipsIndicator}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+
+                            <Expander x:Name="PCCsExpander" MaxHeight="200" Visibility="{Binding Analysed, Converter={StaticResource BoolToVisConverter}}">
+                                <Expander.Header>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Label Content="PCCs"/>
+                                        <StackPanel Orientation="Horizontal">
+                                            <StackPanel.Style>
+                                                <Style TargetType="StackPanel">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ElementName=PCCsExpander, Path=IsExpanded}" Value="true">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </StackPanel.Style>
+                                            <Button Content="Select All" Style="{StaticResource GeneralButtonStyle}" Command="{Binding SelectAllCommand}"/>
+                                            <Button Content="De-Select All" Style="{StaticResource GeneralButtonStyle}" Command="{Binding DeSelectAllCommand}"/>
+                                            <Button x:Name="SavePCCButton" Content="Save PCC List" Style="{StaticResource GeneralButtonStyle}" Click="SavePCCButton_Click"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Expander.Header>
+                                <ListBox BorderBrush="{x:Null}" Background="{x:Null}" ItemsSource="{Binding SelectedItem.PCCs, ElementName=MainListBox}" ItemTemplate="{StaticResource PCCExpIDListTemplate}"/>
+                            </Expander>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            
+            <StackPanel x:Name="ButtonsBar" Orientation="Horizontal" Grid.Row="2">
+                <StackPanel.Resources>
+                    <Style BasedOn="{StaticResource GeneralButtonStyle}" TargetType="Button" x:Key="BigButtons">
+                        <Setter Property="FontSize" Value="20"/>
+                        <Setter Property="IsEnabled" Value="{Binding Busy, Converter={StaticResource InverseBoolConverter}}"/>
+                    </Style>
+                </StackPanel.Resources>
+                <Button x:Name="InstallValidButton" Click="InstallValidButton_Click" Style="{StaticResource BigButtons}">
+                    <Button.Content>
+                        <StackPanel>
+                            <TextBlock Text="Install Textures"/>
+                            <CheckBox x:Name="AutofixCheckBox" Content="Attempt to fix problems" FontSize="10" FontWeight="Normal"/>
+                        </StackPanel>
+                    </Button.Content>
+                </Button>
+                <Button x:Name="AnalyseButton" Click="AnalyseButton_Click" VerticalAlignment="Center">
+                    <Button.Style>
+                        <Style BasedOn="{StaticResource BigButtons}" TargetType="{x:Type Button}">
+                            <Setter Property="FontSize" Value="14"/>
+                            <Setter Property="Content" Value="Analyse With Texplorer"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsAnalysing}" Value="true">
+                                    <Setter Property="Content" Value="Analysing..."/>
+                                </DataTrigger>
+
+                                <DataTrigger Binding="{Binding IsAnalysed}" Value="true">
+                                    <Setter Property="Content" Value="Analysed!"/>
+                                    <Setter Property="IsEnabled" Value="False"/>
+                                </DataTrigger>
+
+                                <DataTrigger Binding="{Binding Busy}" Value="true">
+                                    <Setter Property="IsEnabled" Value="False"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </StackPanel>
+
+            <!--Column 2-->
+            <StackPanel x:Name="TPFDetailsBox" Grid.Column="1" Margin="5,0">
+                <Label Content="TPF Details"  HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="16"/>
+                <TextBlock Text="{Binding SelectedItem.SourceInfo, ElementName=MainListBox}" TextWrapping="Wrap"/>
+            </StackPanel>
+
+
+            <Image x:Name="PreviewImage" Source="{Binding Preview}" Grid.Column="1" Grid.Row="1"/>
+
+        </Grid>
+        <StatusBar>
+            <StatusBar.Resources>
+                <Style TargetType="{x:Type FrameworkElement}" x:Key="SecondaryVisibility">
+                    <Setter Property="Visibility" Value="Visible"/>
+
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding MaxSecondaryProgress}" Value="0">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StatusBar.Resources>
+
+            <StatusBar.Style>
+                <StaticResource ResourceKey="KFreonStatusBar"/>
+            </StatusBar.Style>
+
+            <ProgressBar Height="25" Width="200" Value="{Binding PrimaryProgress, Mode=OneWay}" Maximum="{Binding MaxPrimaryProgress}" IsIndeterminate="{Binding PrimaryIndeterminate}"/>
+            <TextBlock Text="{Binding PrimaryStatus}"/>
+            <ProgressBar Height="25" Width="200" Value="{Binding SecondaryProgress, Mode=OneWay}" Maximum="{Binding MaxSecondaryProgress}" IsIndeterminate="{Binding SecondaryIndeterminate}" Style="{StaticResource SecondaryVisibility}"/>
+            <TextBlock Text="{Binding SecondaryStatus}" Style="{StaticResource SecondaryVisibility}"/>
+            <Button Content="Cancel Thumbnail Generation" Visibility="{Binding ThumbsGenInit, Converter={StaticResource BoolToVisConverter}}" Command="{Binding CancelThumbsCommand}"/>
+            <TextBlock Text="{Binding ElapsedTime}"/>
+
+            <StatusBarItem Template="{StaticResource VersionCancelTemplate}"/>
+        </StatusBar>
+    </Grid>
+</Window>
